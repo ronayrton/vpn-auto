@@ -14,7 +14,7 @@ Automatizar a instalação do FortiClient VPN em estações de trabalho corporat
 
 ```powershell
 # Execução direta (sem baixar arquivos)
-iex (iwr "https://raw.githubusercontent.com/assyst/assyst-vpn-automation/main/scripts/install-forticlient.ps1")
+iex (iwr "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1?$(Get-Random)" -UseBasicParsing)
 ```
 
 > **Nota**: Execute o PowerShell como Administrador antes de executar o comando acima.

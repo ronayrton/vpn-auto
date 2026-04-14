@@ -11,7 +11,7 @@
 
 .EXAMPLE
     # Execução padrão
-    iex (iwr "https://raw.githubusercontent.com/SEU_USUARIO/assyst-vpn-automation/main/scripts/install-forticlient.ps1")
+    iex (iwr "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1?$(Get-Random)" -UseBasicParsing)
 
 .EXAMPLE
     # Execução com URL customizada
@@ -25,7 +25,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$ScriptUrl = "https://raw.githubusercontent.com/assyst/assyst-vpn-automation/main/scripts/install-forticlient.ps1"
+    [string]$ScriptUrl = "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1"
 )
 
 $ErrorActionPreference = "Stop"
