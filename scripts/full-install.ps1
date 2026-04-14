@@ -7,12 +7,14 @@
 
 .NOTES
     Autor: Equipe de Suporte
-    Versão: 2.0.0
+    Versão: 3.0.0
 #>
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+if ($args.Count -gt 0) { $Username = $args[0] }
 
-$Username = $args[0]
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ErrorActionPreference = "Stop"
+
 $ConnectionName = "TJRN"
 $Gateway = "vpn.tjrn.jus.br"
 $Port = 10443
@@ -67,7 +69,10 @@ Write-Log "========================================" -Level "INFO"
 Write-Log "FortiClient VPN - Install & Configure" -Level "INFO"
 Write-Log "========================================" -Level "INFO"
 
-if (-not $Username) { Write-Log "Uso: script.ps1 usuario" -Level "ERROR"; exit }
+if (-not $Username) { 
+    Write-Log "Uso: .\full-install.ps1 -Username usuario" -Level "ERROR"
+    exit 1
+}
 
 if (-not (Test-IsInstalled)) { Install-FortiClient } else { Write-Log "Já instalado" -Level "SUCCESS" }
 
