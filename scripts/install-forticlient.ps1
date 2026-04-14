@@ -76,12 +76,22 @@ function Get-FortiClientInstaller {
         try {
             Write-Log "Baixando instalador..."
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            Invoke-RestMethod -Uri $url -OutFile $tempPath -TimeoutSec 120 -ErrorAction Stop
+            
+            if ($url -match "google.com") {
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
+                $webClient.DownloadFile($url, $tempPath)
+            }
+            else {
+                Invoke-RestMethod -Uri $url -OutFile $tempPath -TimeoutSec 120
+            }
             
             if (Test-Path $tempPath) {
                 $fileSize = (Get-Item $tempPath).Length
-                Write-Log "Download concluído. Tamanho: $([math]::Round($fileSize / 1MB, 2)) MB" -Level "SUCCESS"
-                return $tempPath
+                if ($fileSize -gt 1000) {
+                    Write-Log "Download concluído. Tamanho: $([math]::Round($fileSize / 1MB, 2)) MB" -Level "SUCCESS"
+                    return $tempPath
+                }
             }
         }
         catch {
