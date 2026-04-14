@@ -77,7 +77,7 @@ function Get-FortiClientInstaller {
             Write-Log "Baixando instalador..."
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
             
-            if ($url -match "google.com") {
+            if ($url -match "google.com" -or $url -match "drive.google.com") {
                 $webClient = New-Object System.Net.WebClient
                 $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
                 $webClient.DownloadFile($url, $tempPath)
@@ -202,6 +202,7 @@ function Main {
             $downloadUrls = @($CustomUrl)
         } else {
             $downloadUrls = @(
+                "https://drive.google.com/uc?export=download&id=1h9jOQMqVa5G991pXtUs9l4wEUVMeRmWb",
                 "https://docs.google.com/uc?export=download&id=1G1L745fJ-zr2XVHaIsTNSwzRJM0GI1ah",
                 "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
             )
