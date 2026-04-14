@@ -103,7 +103,7 @@ function Install-FortiClient {
     Write-Log "Iniciando instalação silenciosa..."
     
     try {
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList "/silent /norestart" -WindowStyle Hidden -Wait -PassThru
+        $process = Start-Process -FilePath $InstallerPath -ArgumentList "-quiet -norestart" -WindowStyle Hidden -Wait -PassThru
         
         Start-Sleep -Seconds 5
         
