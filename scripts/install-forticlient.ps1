@@ -202,8 +202,6 @@ function Main {
             $downloadUrls = @($CustomUrl)
         } else {
             $downloadUrls = @(
-                "https://drive.google.com/uc?export=download&id=1h9jOQMqVa5G991pXtUs9l4wEUVMeRmWb",
-                "https://docs.google.com/uc?export=download&id=1G1L745fJ-zr2XVHaIsTNSwzRJM0GI1ah",
                 "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
             )
         }
