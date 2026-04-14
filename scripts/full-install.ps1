@@ -54,41 +54,10 @@ function Configure-VPN {
     
     $configFile = Join-Path $vpnPath "$ConnectionName.conn"
     
-    $config = @"<?xml version="1.0" encoding="UTF-8"?>
-<FortiClientVPNProfile>
-    <Name>$ConnectionName</Name>
-    <Type>ssl</Type>
-    <RemoteGateway>$Gateway</RemoteGateway>
-    <Port>$Port</Port>
-    <Username>$Username</Username>
-    <AuthMethod>0</AuthMethod>
-    <SavePassword>true</SavePassword>
-    <DefaultGateway>true</DefaultGateway>
-    <SplitTunneling>true</SplitTunneling>
-    <Theme>0</Theme>
-    <ShowPassword>false</ShowPassword>
-    <Connected>false</Connected>
-    <ConnectionWarningDuration>0</ConnectionWarningDuration>
-    <LastConnected>0</LastConnected>
-    <KeepAlive>0</KeepAlive>
-    <IdleTimeout>0</IdleTimeout>
-    <DesktopShortcut>false</DesktopShortcut>
-    <StartWithWindows>false</StartWithWindows>
-    <StartMinimized>false</StartMinimized>
-    <DisableTrayIcon>false</DisableTrayIcon>
-    <AllowConnectionToMultipleServers>true</AllowConnectionToMultipleServers>
-</FortiClientVPNProfile>
-"@
-    $config | Out-File -FilePath $configFile -Encoding UTF8 -Force
-    Write-Log "VPN configurada: $configFile" -Level "SUCCESS"
+    $xmlContent = '<?xml version="1.0" encoding="UTF-8"?><FortiClientVPNProfile><Name>' + $ConnectionName + '</Name><Type>ssl</Type><RemoteGateway>' + $Gateway + '</RemoteGateway><Port>' + $Port + '</Port><Username>' + $Username + '</Username><AuthMethod>0</AuthMethod><SavePassword>true</SavePassword><DefaultGateway>true</DefaultGateway><SplitTunneling>true</SplitTunneling><Theme>0</Theme><ShowPassword>false</ShowPassword><Connected>false</Connected></FortiClientVPNProfile>'
     
-    $fcconfig = "C:\Program Files\Fortinet\FortiClient\FCConfig.exe"
-    if (Test-Path $fcconfig) {
-        try {
-            Write-Log "Importando configuração..."
-            & $fcconfig -m vpn -i $configFile 2>$null
-        } catch {}
-    }
+    $xmlContent | Out-File -FilePath $configFile -Encoding UTF8 -Force
+    Write-Log "VPN configurada: $configFile" -Level "SUCCESS"
 }
 
 Write-Log "========================================" -Level "INFO"
