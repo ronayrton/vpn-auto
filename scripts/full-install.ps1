@@ -45,24 +45,50 @@ function Install-FortiClient {
 
 function Configure-VPN {
     Write-Log "Configurando VPN..."
+    
     $vpnPath = Join-Path $env:APPDATA "FortiClient\Vpn\Connections"
     if (-not (Test-Path $vpnPath)) { New-Item -ItemType Directory -Path $vpnPath -Force | Out-Null }
-    $configFile = Join-Path $vpnPath "$ConnectionName.fcc"
-    $config = @"
-<?xml version="1.0" encoding="UTF-8"?>
+    
+    $oldFile = Join-Path $vpnPath "$ConnectionName.fcc"
+    if (Test-Path $oldFile) { Remove-Item $oldFile -Force }
+    
+    $configFile = Join-Path $vpnPath "$ConnectionName.conn"
+    
+    $config = @"<?xml version="1.0" encoding="UTF-8"?>
 <FortiClientVPNProfile>
     <Name>$ConnectionName</Name>
-    <Type>1</Type>
-    <Server>$Gateway</Server>
+    <Type>ssl</Type>
+    <RemoteGateway>$Gateway</RemoteGateway>
     <Port>$Port</Port>
     <Username>$Username</Username>
-    <AuthType>1</AuthType>
+    <AuthMethod>0</AuthMethod>
+    <SavePassword>true</SavePassword>
     <DefaultGateway>true</DefaultGateway>
-    <VpnType>1</VpnType>
+    <SplitTunneling>true</SplitTunneling>
+    <Theme>0</Theme>
+    <ShowPassword>false</ShowPassword>
+    <Connected>false</Connected>
+    <ConnectionWarningDuration>0</ConnectionWarningDuration>
+    <LastConnected>0</LastConnected>
+    <KeepAlive>0</KeepAlive>
+    <IdleTimeout>0</IdleTimeout>
+    <DesktopShortcut>false</DesktopShortcut>
+    <StartWithWindows>false</StartWithWindows>
+    <StartMinimized>false</StartMinimized>
+    <DisableTrayIcon>false</DisableTrayIcon>
+    <AllowConnectionToMultipleServers>true</AllowConnectionToMultipleServers>
 </FortiClientVPNProfile>
 "@
     $config | Out-File -FilePath $configFile -Encoding UTF8 -Force
-    Write-Log "VPN configurada" -Level "SUCCESS"
+    Write-Log "VPN configurada: $configFile" -Level "SUCCESS"
+    
+    $fcconfig = "C:\Program Files\Fortinet\FortiClient\FCConfig.exe"
+    if (Test-Path $fcconfig) {
+        try {
+            Write-Log "Importando configuração..."
+            & $fcconfig -m vpn -i $configFile 2>$null
+        } catch {}
+    }
 }
 
 Write-Log "========================================" -Level "INFO"
