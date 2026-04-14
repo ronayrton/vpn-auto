@@ -57,7 +57,8 @@ function Configure-VPN {
     $xmlContent = '<?xml version="1.0" encoding="UTF-8"?><FortiClientVPNProfile><Name>' + $ConnectionName + '</Name><Type>ssl</Type><RemoteGateway>' + $Gateway + '</RemoteGateway><Port>' + $Port + '</Port><Username>' + $Username + '</Username><AuthMethod>0</AuthMethod><SavePassword>true</SavePassword><DefaultGateway>true</DefaultGateway><SplitTunneling>true</SplitTunneling><Theme>0</Theme><ShowPassword>false</ShowPassword><Connected>false</Connected></FortiClientVPNProfile>'
     
     $xmlContent | Out-File -FilePath $configFile -Encoding UTF8 -Force
-    Write-Log "VPN configurada: $configFile" -Level "SUCCESS"
+    Write-Log "VPN configurada em: $configFile" -Level "SUCCESS"
+    Write-Log "IMPORTANTE: Reinicie o PC ou Facca logout/login" -Level "WARNING"
 }
 
 Write-Log "========================================" -Level "INFO"
