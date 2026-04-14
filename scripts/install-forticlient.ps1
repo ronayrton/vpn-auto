@@ -6,21 +6,31 @@
     Este script automatiza o download e instalação do FortiClient VPN em ambientes corporativos.
     Designed para uso em suporte técnico remoto (Assistência Rápida do Windows).
 
-.PARAMETER Silent
-    Executa instalação em modo silencioso sem interação
+.PARAMETER SkipCheck
+    Pula verificação de instalação existente
+
+.PARAMETER CustomUrl
+    URL customizada para o instalador
 
 .EXAMPLE
     .\install-forticlient.ps1
 
+.EXAMPLE
+    .\install-forticlient.ps1 -CustomUrl "https://servidor.com/vpn.exe"
+
 .NOTES
     Autor: Equipe de Suporte
-    Versão: 1.0.0
+    Versão: 2.0.0
     Data: 2026-04-13
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [switch]$SkipCheck,
+    [string]$CustomUrl
+)
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
 
 function Write-Log {
@@ -33,6 +43,20 @@ function Write-Log {
         "ERROR"   = "Red"
     }
     Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colors[$Level]
+}
+
+function Test-IsInstalled {
+    $app = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*FortiClient*" }
+    if ($app) {
+        Write-Log "FortiClient já instalado: $($app.Name) v$($app.Version)" -Level "INFO"
+        return $true
+    }
+    $reg = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" | Where-Object { $_.DisplayName -like "*FortiClient*" }
+    if ($reg) {
+        Write-Log "FortiClient já instalado (registro): $($reg.DisplayName)" -Level "INFO"
+        return $true
+    }
+    return $false
 }
 
 function Test-Administrator {
@@ -50,14 +74,9 @@ function Get-FortiClientInstaller {
         Write-Log "Tentando baixar: $url"
         
         try {
-            $response = Invoke-WebRequest -Uri $url -Method Head -TimeoutSec 30 -ErrorAction SilentlyContinue
-            if ($response.StatusCode -ne 200) {
-                Write-Log "URL não disponível: $url" -Level "WARNING"
-                continue
-            }
-            
             Write-Log "Baixando instalador..."
-            Invoke-WebRequest -Uri $url -OutFile $tempPath -TimeoutSec 120 -ErrorAction Stop
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-RestMethod -Uri $url -OutFile $tempPath -TimeoutSec 120 -ErrorAction Stop
             
             if (Test-Path $tempPath) {
                 $fileSize = (Get-Item $tempPath).Length
@@ -157,9 +176,18 @@ function Main {
     try {
         Initialize-Prerequisites
         
-        $downloadUrls = @(
-            "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
-        )
+        if (-not $SkipCheck -and (Test-IsInstalled)) {
+            Write-Log "FortiClient já está instalado. Use -SkipCheck para forçar reinstall." -Level "WARNING"
+            return
+        }
+        
+        if ($CustomUrl) {
+            $downloadUrls = @($CustomUrl)
+        } else {
+            $downloadUrls = @(
+                "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
+            )
+        }
         
         $installerPath = Get-FortiClientInstaller -Urls $downloadUrls
         
