@@ -13,25 +13,28 @@ Automatizar a instalação do FortiClient VPN em estações de trabalho corporat
 ## Quick Start (1 linha)
 
 ```powershell
-# Execução direta (sem baixar arquivos)
-iex (iwr "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1?$(Get-Random)" -UseBasicParsing)
+# Instalar FortiClient (sem configuração automática)
+irm "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1" -OutFile "$env:TEMP\forti-install.ps1"; & "$env:TEMP\forti-install.ps1"
 ```
 
 > **Nota**: Execute o PowerShell como Administrador antes de executar o comando acima.
 
+> **IMPORTANTE**: A configuração automática da VPN não funciona no FortiClient 7.2+. O técnico deve configurar manualmente uma vez após a instalação.
+
 ## Estrutura do Projeto
 
 ```
-assyst-vpn-automation/
-├── README.md              # Este arquivo
-├── LICENSE                # Licença MIT
-├── .gitignore              # Configurações Git
+vpn-auto/
+├── README.md                      # Este arquivo
+├── LICENSE                        # Licença MIT
 ├── scripts/
-│   └── install-forticlient.ps1    # Script principal
+│   ├── install-forticlient.ps1     # Script principal (instalar)
+│   ├── full-install.ps1            # Instalar + configurar (experimental)
+│   └── clean-install.ps1           # Desinstalar + limpar + instalar
 ├── install/
-│   └── run-install.ps1           # Script para execução remota
+│   └── run-install.ps1             # Script para execução remota
 └── docs/
-    └── runbook.md                # Guia para técnicos
+    └── runbook.md                  # Guia para técnicos
 ```
 
 ## Scripts
