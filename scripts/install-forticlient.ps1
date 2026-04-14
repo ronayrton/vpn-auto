@@ -100,12 +100,19 @@ function Install-FortiClient {
         throw "Instalador não encontrado: $InstallerPath"
     }
     
-    $installArgs = @("/silent", "/norestart")
-    $installArgsStr = $installArgs -join " "
-    Write-Log "Iniciando instalação com argumentos: $installArgsStr"
+    Write-Log "Iniciando instalação silenciosa..."
     
     try {
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList $installArgsStr -Wait -PassThru -ErrorAction Stop
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $InstallerPath
+        $psi.Arguments = "/silent /norestart"
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        
+        $process = [System.Diagnostics.Process]::Start($psi)
+        $process.WaitForExit()
         
         Start-Sleep -Seconds 5
         
