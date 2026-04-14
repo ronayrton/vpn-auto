@@ -70,11 +70,12 @@ Write-Log "FortiClient VPN - Install & Configure" -Level "INFO"
 Write-Log "========================================" -Level "INFO"
 
 if (-not $Username) { 
-    Write-Log "Uso: .\full-install.ps1 -Username usuario" -Level "ERROR"
-    exit 1
+    $Username = Read-Host "Digite seu usuário de rede (ex: nome.sobrenome)"
 }
+
+Write-Log "Usuário: $Username" -Level "INFO"
 
 if (-not (Test-IsInstalled)) { Install-FortiClient } else { Write-Log "Já instalado" -Level "SUCCESS" }
 
 Configure-VPN
-Write-Log "Pronto!" -Level "SUCCESS"
+Write-Log "Pronto! Abra o FortiClient e conecte." -Level "SUCCESS"
