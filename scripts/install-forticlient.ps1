@@ -68,7 +68,7 @@ function Test-Administrator {
 function Get-FortiClientInstaller {
     param([string[]]$Urls)
     
-    $tempPath = Join-Path "C:\VpnInstall" "FortiClientVPNSetup.exe"
+    $tempPath = Join-Path $env:TEMP "FortiClientVPNSetup.exe"
     
     foreach ($url in $Urls) {
         Write-Log "Tentando baixar: $url"
