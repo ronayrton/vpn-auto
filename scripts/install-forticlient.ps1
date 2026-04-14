@@ -113,7 +113,7 @@ function Install-FortiClient {
     Write-Log "Iniciando instalação silenciosa..."
     
     try {
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList "-quiet -norestart" -WindowStyle Hidden -Wait -PassThru
+        $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart" -WindowStyle Hidden -Wait -PassThru
         
         Start-Sleep -Seconds 5
         
@@ -201,9 +201,9 @@ function Main {
         if ($CustomUrl) {
             $downloadUrls = @($CustomUrl)
         } else {
-            $downloadUrls = @(
-                "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
-            )
+$downloadUrls = @(
+    "https://suporte.tjrn.jus.br/arquivos/vpntjrn.exe"
+)
         }
         
         $installerPath = Get-FortiClientInstaller -Urls $downloadUrls
