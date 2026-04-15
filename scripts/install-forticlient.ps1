@@ -12,23 +12,40 @@
 .PARAMETER CustomUrl
     URL customizada para o instalador
 
+.PARAMETER SkipConfig
+    Pula configuração automática da VPN
+
 .EXAMPLE
     .\install-forticlient.ps1
 
 .EXAMPLE
     .\install-forticlient.ps1 -CustomUrl "https://servidor.com/vpn.exe"
 
+.EXAMPLE
+    .\install-forticlient.ps1 -SkipConfig
+
 .NOTES
     Autor: Equipe de Suporte
-    Versão: 2.0.0
-    Data: 2026-04-13
+    Versão: 3.0.0
+    Data: 2026-04-15
 #>
 
 [CmdletBinding()]
 param(
     [switch]$SkipCheck,
+    [switch]$SkipConfig,
     [string]$CustomUrl
 )
+
+# ==============================================================================
+# CONFIGURAÇÕES DA VPN - Edite aqui conforme necessário
+# ==============================================================================
+$VPNConfig = @{
+    NomePerfil = "TJRN"           # Nome do perfil VPN
+    Gateway    = "vpn.tjrn.jus.br"  # Endereço do servidor VPN
+    Porta      = 10443           # Porta do servidor VPN (padrão: 443)
+}
+# ==============================================================================
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
@@ -185,6 +202,75 @@ function Register-InstallationMetric {
     }
 }
 
+# ==============================================================================
+# FUNÇÃO DE CONFIGURAÇÃO AUTOMÁTICA DA VPN VIA REGISTRO
+# ==============================================================================
+function New-VPNConfiguration {
+    param()
+    
+    # Verificar se o FortiClient está instalado
+    $fortiClientPath = "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
+    
+    if (-not (Test-Path $fortiClientPath)) {
+        Write-Log "FortiClient não encontrado em $fortiClientPath - pulando configuração" -Level "WARNING"
+        return $false
+    }
+    
+    Write-Log "Iniciando configuração automática da VPN..." -Level "INFO"
+    
+    # Aguardar 5 segundos para o FortiClient estar pronto
+    Start-Sleep -Seconds 5
+    
+    try {
+        # Criar chave do registro para o perfil VPN
+        $registryPath = "HKLM:\SOFTWARE\Fortinet\FortiClient\Sslvpn\Tunnels\$($VPNConfig.NomePerfil)"
+        
+        Write-Log "Criando perfil VPN no registro: $registryPath" -Level "INFO"
+        
+        # Criar a chave do registro
+        if (-not (Test-Path $registryPath)) {
+            New-Item -Path $registryPath -Force | Out-Null
+        }
+        
+        # Configurar as propriedades do perfil
+        $serverAddress = "$($VPNConfig.Gateway):$($VPNConfig.Porta)"
+        
+        Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -ErrorAction Stop
+        Set-ItemProperty -Path $registryPath -Name "Description" -Value "VPN Automática TJRN" -ErrorAction Stop
+        Set-ItemProperty -Path $registryPath -Name "promptusername" -Value "1" -ErrorAction Stop
+        Set-ItemProperty -Path $registryPath -Name "promptcertificate" -Value "0" -ErrorAction Stop
+        Set-ItemProperty -Path $registryPath -Name "ServerCert" -Value "1" -ErrorAction Stop
+        Set-ItemProperty -Path $registryPath -Name "sso_enabled" -Value "0" -ErrorAction Stop
+        
+        Write-Log "Perfil VPN configurado com sucesso!" -Level "SUCCESS"
+        Write-Log "Servidor: $serverAddress" -Level "INFO"
+        
+        # Registrar no Event Viewer
+        $source = "Assyst-VPN-Automation"
+        $eventLogName = "Application"
+        if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+            New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+        }
+        Write-EventLog -LogName $eventLogName -Source $source -Message "VPN configurada automaticamente: $($VPNConfig.NomePerfil) -> $serverAddress" -EventId 1001 -EntryType Information -ErrorAction SilentlyContinue
+        
+        return $true
+    }
+    catch {
+        Write-Log "Erro ao configurar VPN: $($_.Exception.Message)" -Level "ERROR"
+        
+        # Registrar erro no Event Viewer
+        $source = "Assyst-VPN-Automation"
+        $eventLogName = "Application"
+        if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+            New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+        }
+        Write-EventLog -LogName $eventLogName -Source $source -Message "Erro ao configurar VPN: $($_.Exception.Message)" -EventId 1001 -EntryType Error -ErrorAction SilentlyContinue
+        
+        return $false
+    }
+}
+# ==============================================================================
+
 function Main {
     Write-Log "========================================" -Level "INFO"
     Write-Log "Assyst VPN Automation - Início" -Level "INFO"
@@ -219,6 +305,21 @@ $downloadUrls = @(
         $installSuccess = Install-FortiClient -InstallerPath $installerPath
         
         Register-InstallationMetric -Success $installSuccess
+        
+        # Configuração automática da VPN (se não for pulada)
+        if (-not $SkipConfig -and $installSuccess) {
+            Write-Log "========================================" -Level "INFO"
+            Write-Log "Iniciando configuração da VPN..." -Level "INFO"
+            Write-Log "========================================" -Level "INFO"
+            
+            $configSuccess = New-VPNConfiguration
+            
+            if ($configSuccess) {
+                Write-Log "========================================" -Level "SUCCESS"
+                Write-Log "VPN configurada automaticamente!" -Level "SUCCESS"
+                Write-Log "========================================" -Level "SUCCESS"
+            }
+        }
         
         if ($installSuccess) {
             Write-Log "========================================" -Level "SUCCESS"
