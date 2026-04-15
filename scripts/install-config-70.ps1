@@ -1,12 +1,13 @@
 <#
 .SYNOPSIS
-    Instala e configura FortiClient VPN
+    Instala, configura e exporta FortiClient VPN
 
 .DESCRIPTION
-    Script completo: baixa, instala e cria configuração VPN
+    Script completo: baixa, instala, cria config e exporta XML
 #>
 
 $Username = $args[0]
+$ExportPath = $args[1]
 
 if (-not $Username) {
     $Username = Read-Host "Digite seu usuario de rede"
@@ -48,7 +49,14 @@ $xml | Out-File -FilePath $configFile -Encoding UTF8 -Force
 
 Write-Host "Configuracao salva: $configFile"
 
-# 3. Abrir FortiClient
+# 3. Exportar XML se solicitado
+if ($ExportPath) {
+    $exportFile = Join-Path $ExportPath "TJRN-vpn-config.xml"
+    $xml | Out-File -FilePath $exportFile -Encoding UTF8 -Force
+    Write-Host "XML exportado: $exportFile"
+}
+
+# 4. Abrir FortiClient
 Write-Host "[4] Abrindo FortiClient..."
 Start-Process "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
 
