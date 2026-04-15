@@ -361,55 +361,52 @@ function Main {
     try {
         Initialize-Prerequisites
         
-        if (-not $SkipCheck -and (Test-IsInstalled)) {
-            Write-Log "FortiClient já está instalado. Use -SkipCheck para forçar reinstall." -Level "WARNING"
-            return
+        $isInstalled = Test-IsInstalled
+        
+        if (-not $SkipCheck -and $isInstalled) {
+            Write-Log "FortiClient já está instalado. Pulando instalação..." -Level "WARNING"
+            Write-Log "Continuando com configuração da VPN..." -Level "INFO"
+        }
+        else {
+            if ($CustomUrl) {
+                $downloadUrls = @($CustomUrl)
+            } else {
+                $downloadUrls = @(
+                    "https://github.com/ronayrton/vpn-auto/releases/download/v1.0.0/vpntjrn.exe",
+                    "https://suporte.tjrn.jus.br/arquivos/vpntjrn.exe"
+                )
+            }
+            
+            $installerPath = Get-FortiClientInstaller -Urls $downloadUrls
+            
+            if ($null -eq $installerPath) {
+                Write-Log "Todas as URLs de download falharam" -Level "ERROR"
+                Open-FallbackDownload
+                Register-InstallationMetric -Success $false
+                return
+            }
+            
+            $installSuccess = Install-FortiClient -InstallerPath $installerPath
+            Register-InstallationMetric -Success $installSuccess
+            
+            if (-not $installSuccess) {
+                Write-Log "Instalação finalizada com erros" -Level "ERROR"
+            }
         }
         
-        if ($CustomUrl) {
-            $downloadUrls = @($CustomUrl)
-        } else {
-$downloadUrls = @(
-    "https://github.com/ronayrton/vpn-auto/releases/download/v1.0.0/vpntjrn.exe",
-    "https://suporte.tjrn.jus.br/arquivos/vpntjrn.exe"
-)
-        }
-        
-        $installerPath = Get-FortiClientInstaller -Urls $downloadUrls
-        
-        if ($null -eq $installerPath) {
-            Write-Log "Todas as URLs de download falharam" -Level "ERROR"
-            Open-FallbackDownload
-            Register-InstallationMetric -Success $false
-            return
-        }
-        
-        $installSuccess = Install-FortiClient -InstallerPath $installerPath
-        
-        Register-InstallationMetric -Success $installSuccess
-        
-        # Configuração automática da VPN (se não for pulada)
-        if (-not $SkipConfig -and $installSuccess) {
+        # Configuração automática da VPN (sempre executa, mesmo se já instalado)
+        if (-not $SkipConfig) {
             Write-Log "========================================" -Level "INFO"
             Write-Log "Iniciando configuração da VPN..." -Level "INFO"
             Write-Log "========================================" -Level "INFO"
             
             $configSuccess = New-VPNConfiguration
             
-            if ($configSuccess) {
+if ($configSuccess) {
                 Write-Log "========================================" -Level "SUCCESS"
                 Write-Log "VPN configurada automaticamente!" -Level "SUCCESS"
                 Write-Log "========================================" -Level "SUCCESS"
             }
-        }
-        
-        if ($installSuccess) {
-            Write-Log "========================================" -Level "SUCCESS"
-            Write-Log "FortiClient VPN instalado com sucesso!" -Level "SUCCESS"
-            Write-Log "========================================" -Level "SUCCESS"
-        }
-        else {
-            Write-Log "Instalação finalizado com erros" -Level "ERROR"
         }
     }
     catch {
@@ -423,7 +420,9 @@ $downloadUrls = @(
             Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
         }
         
-        Write-Log "Processo concluído" -Level "INFO"
+        Write-Log "========================================" -Level "INFO"
+        Write-Log "Processo concluído!" -Level "SUCCESS"
+        Write-Log "========================================" -Level "INFO"
     }
 }
 
