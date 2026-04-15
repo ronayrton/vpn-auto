@@ -208,7 +208,9 @@ function Register-InstallationMetric {
 function New-VPNConfiguration {
     param()
     
+    # ==============================================================================
     # Verificar se o FortiClient está instalado
+    # ==============================================================================
     $fortiClientPath = "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
     
     if (-not (Test-Path $fortiClientPath)) {
@@ -216,55 +218,135 @@ function New-VPNConfiguration {
         return $false
     }
     
-    Write-Log "Iniciando configuração automática da VPN..." -Level "INFO"
+    Write-Log "========================================" -Level "INFO"
+    Write-Log "Configuração Automática da VPN TJRN" -Level "INFO"
+    Write-Log "========================================" -Level "INFO"
     
-    # Aguardar 5 segundos para o FortiClient estar pronto
+    # Aguardar 5 segundos para o FortiClient estar pronto após instalação
+    Write-Log "Aguardando 5 segundos..." -Level "INFO"
     Start-Sleep -Seconds 5
     
     try {
+        # ==============================================================================
         # Criar chave do registro para o perfil VPN
-        $registryPath = "HKLM:\SOFTWARE\Fortinet\FortiClient\Sslvpn\Tunnels\$($VPNConfig.NomePerfil)"
+        # ==============================================================================
+        $registryPath = "HKLM:\SOFTWARE\Fortinet\FortiClient\Sslvpn\Tunnels\TJRN"
         
-        Write-Log "Criando perfil VPN no registro: $registryPath" -Level "INFO"
+        Write-Log "Criando perfil VPN no registro..." -Level "INFO"
+        Write-Log "Caminho: $registryPath" -Level "INFO"
         
-        # Criar a chave do registro
+        # Criar a chave do registro se não existir
         if (-not (Test-Path $registryPath)) {
             New-Item -Path $registryPath -Force | Out-Null
+            Write-Log "Chave do registro criada" -Level "INFO"
         }
         
-        # Configurar as propriedades do perfil
-        $serverAddress = "$($VPNConfig.Gateway):$($VPNConfig.Porta)"
+        # ==============================================================================
+        # Configurar as propriedades do perfil VPN com dados reais
+        # ==============================================================================
+        $serverAddress = "vpn.tjrn.jus.br:10443"
         
-        Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -ErrorAction Stop
-        Set-ItemProperty -Path $registryPath -Name "Description" -Value "VPN Automática TJRN" -ErrorAction Stop
-        Set-ItemProperty -Path $registryPath -Name "promptusername" -Value "1" -ErrorAction Stop
-        Set-ItemProperty -Path $registryPath -Name "promptcertificate" -Value "0" -ErrorAction Stop
-        Set-ItemProperty -Path $registryPath -Name "ServerCert" -Value "1" -ErrorAction Stop
-        Set-ItemProperty -Path $registryPath -Name "sso_enabled" -Value "0" -ErrorAction Stop
+        # Server - Endereço do gateway VPN
+        Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -Type String -ErrorAction Stop
+        Write-Log "  - Server: $serverAddress" -Level "INFO"
+        
+        # Description - Descrição do perfil
+        Set-ItemProperty -Path $registryPath -Name "Description" -Value "VPN Automática TJRN" -Type String -ErrorAction Stop
+        Write-Log "  - Description: VPN Automática TJRN" -Level "INFO"
+        
+        # promptusername = 0 (DWord) - Campo usuário em branco para usuário preencher
+        Set-ItemProperty -Path $registryPath -Name "promptusername" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - promptusername: 0 (campo usuário em branco)" -Level "INFO"
+        
+        # promptcertificate = 0 (DWord) - Nenhum certificado
+        Set-ItemProperty -Path $registryPath -Name "promptcertificate" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - promptcertificate: 0" -Level "INFO"
+        
+        # ServerCert = "1" (String)
+        Set-ItemProperty -Path $registryPath -Name "ServerCert" -Value "1" -Type String -ErrorAction Stop
+        Write-Log "  - ServerCert: 1" -Level "INFO"
+        
+        # sso_enabled = 0 (DWord) - SSO desativado
+        Set-ItemProperty -Path $registryPath -Name "sso_enabled" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - sso_enabled: 0" -Level "INFO"
+        
+        # use_external_browser = 0 (DWord)
+        Set-ItemProperty -Path $registryPath -Name "use_external_browser" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - use_external_browser: 0" -Level "INFO"
+        
+        # username = "" (String) - Campo vazio para usuário preencher
+        Set-ItemProperty -Path $registryPath -Name "username" -Value "" -Type String -ErrorAction Stop
+        Write-Log "  - username: (em branco para usuário preencher)" -Level "INFO"
         
         Write-Log "Perfil VPN configurado com sucesso!" -Level "SUCCESS"
-        Write-Log "Servidor: $serverAddress" -Level "INFO"
         
-        # Registrar no Event Viewer
+        # ==============================================================================
+        # Registrar no Windows Event Viewer
+        # ==============================================================================
         $source = "Assyst-VPN-Automation"
         $eventLogName = "Application"
-        if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
-            New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+        try {
+            if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+                New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+            }
+            Write-EventLog -LogName $eventLogName -Source $source -Message "VPN TJRN configurada automaticamente - Server: $serverAddress" -EventId 1001 -EntryType Information -ErrorAction SilentlyContinue
+            Write-Log "Registrado no Event Viewer" -Level "INFO"
         }
-        Write-EventLog -LogName $eventLogName -Source $source -Message "VPN configurada automaticamente: $($VPNConfig.NomePerfil) -> $serverAddress" -EventId 1001 -EntryType Information -ErrorAction SilentlyContinue
+        catch {
+            Write-Log "Não foi possível registrar no Event Viewer: $($_.Exception.Message)" -Level "WARNING"
+        }
+        
+        # ==============================================================================
+        # Pós-configuração: Fechar e reabrir FortiClient
+        # ==============================================================================
+        Write-Log "========================================" -Level "INFO"
+        Write-Log "Reiniciando FortiClient..." -Level "INFO"
+        
+        # Fechar FortiClient se estiver aberto
+        try {
+            Stop-Process -Name "FortiClient" -Force -ErrorAction SilentlyContinue
+            Write-Log "FortiClient fechado" -Level "INFO"
+        }
+        catch {
+            Write-Log "Nenhum processo FortiClient ativo" -Level "INFO"
+        }
+        
+        # Aguardar 2 segundos
+        Start-Sleep -Seconds 2
+        
+        # Reabrir FortiClient
+        try {
+            Start-Process $fortiClientPath -ErrorAction Stop
+            Write-Log "FortiClient reopened" -Level "SUCCESS"
+        }
+        catch {
+            Write-Log "Erro ao reopen FortiClient: $($_.Exception.Message)" -Level "WARNING"
+        }
+        
+        Write-Log "========================================" -Level "SUCCESS"
+        Write-Log "VPN TJRN configurada com sucesso!" -Level "SUCCESS"
+        Write-Log "O campo Usuário está em branco para o usuário preencher" -Level "INFO"
+        Write-Log "========================================" -Level "SUCCESS"
         
         return $true
     }
     catch {
+        Write-Log "========================================" -Level "ERROR"
         Write-Log "Erro ao configurar VPN: $($_.Exception.Message)" -Level "ERROR"
+        Write-Log "========================================" -Level "ERROR"
         
         # Registrar erro no Event Viewer
-        $source = "Assyst-VPN-Automation"
-        $eventLogName = "Application"
-        if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
-            New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+        try {
+            $source = "Assyst-VPN-Automation"
+            $eventLogName = "Application"
+            if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+                New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+            }
+            Write-EventLog -LogName $eventLogName -Source $source -Message "Erro ao configurar VPN TJRN: $($_.Exception.Message)" -EventId 1001 -EntryType Error -ErrorAction SilentlyContinue
         }
-        Write-EventLog -LogName $eventLogName -Source $source -Message "Erro ao configurar VPN: $($_.Exception.Message)" -EventId 1001 -EntryType Error -ErrorAction SilentlyContinue
+        catch {
+            Write-Log "Não foi possível registrar erro no Event Viewer" -Level "WARNING"
+        }
         
         return $false
     }
