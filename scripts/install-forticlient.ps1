@@ -202,6 +202,7 @@ function Main {
             $downloadUrls = @($CustomUrl)
         } else {
 $downloadUrls = @(
+    "https://github.com/ronayrton/vpn-auto/releases/download/v2.0.0/FortiClientVPN7.0.exe",
     "https://github.com/ronayrton/vpn-auto/releases/download/v1.0.0/vpntjrn.exe",
     "https://suporte.tjrn.jus.br/arquivos/vpntjrn.exe"
 )
