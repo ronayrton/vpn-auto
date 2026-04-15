@@ -278,6 +278,18 @@ function New-VPNConfiguration {
         Set-ItemProperty -Path $registryPath -Name "username" -Value "" -Type String -ErrorAction Stop
         Write-Log "  - username: (em branco para usuário preencher)" -Level "INFO"
         
+        # show_remember_password = 1 (DWord)
+        Set-ItemProperty -Path $registryPath -Name "show_remember_password" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - show_remember_password: 1" -Level "INFO"
+        
+        # save_credentials = 1 (DWord)
+        Set-ItemProperty -Path $registryPath -Name "save_credentials" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - save_credentials: 1" -Level "INFO"
+        
+        # warn_invalid_server_certificate = 1 (DWord)
+        Set-ItemProperty -Path $registryPath -Name "warn_invalid_server_certificate" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - warn_invalid_server_certificate: 1" -Level "INFO"
+        
         Write-Log "Perfil VPN configurado com sucesso!" -Level "SUCCESS"
         
         # ==============================================================================
@@ -365,9 +377,13 @@ function Main {
         
         if (-not $SkipCheck -and $isInstalled) {
             Write-Log "FortiClient já está instalado. Pulando instalação..." -Level "WARNING"
-            Write-Log "Continuando com configuração da VPN..." -Level "INFO"
         }
         else {
+            if (-not $isInstalled) {
+                Write-Log "FortiClient não encontrado. Iniciando instalação..." -Level "INFO"
+            }
+            
+            if ($CustomUrl) {
             if ($CustomUrl) {
                 $downloadUrls = @($CustomUrl)
             } else {
