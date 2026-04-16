@@ -359,16 +359,27 @@ function New-VPNConfiguration {
             Write-Log "Nenhum processo FortiClient ativo" -Level "INFO"
         }
         
+        # Fechar FortiClient se estiver aberto
+        try {
+            Stop-Process -Name "FortiClient" -Force -ErrorAction SilentlyContinue
+            Write-Log "FortiClient fechado" -Level "INFO"
+        }
+        catch {
+            Write-Log "Nenhum processo FortiClient ativo" -Level "INFO"
+        }
+        
         # Aguardar 2 segundos
         Start-Sleep -Seconds 2
         
-        # Reabrir FortiClient
+        # Abrir FortiClient com parametro -c (conectar)
         try {
-            Start-Process $fortiClientPath -ErrorAction Stop
-            Write-Log "FortiClient reopened" -Level "SUCCESS"
+            Start-Process $fortiClientPath -ArgumentList "-c" -ErrorAction Stop
+            Write-Log "FortiClient aberto" -Level "SUCCESS"
         }
         catch {
-            Write-Log "Erro ao reopen FortiClient: $($_.Exception.Message)" -Level "WARNING"
+            # Tentar sem parametros
+            Start-Process $fortiClientPath -ErrorAction Stop
+            Write-Log "FortiClient aberto" -Level "SUCCESS"
         }
         
         Write-Log "========================================" -Level "SUCCESS"
