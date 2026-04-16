@@ -172,13 +172,7 @@ function Install-FortiClient {
 
 function Open-FallbackDownload {
     Write-Log "Abrindo navegador para download manual..." -Level "WARNING"
-    try {
-        Start-Process "https://suporte.tjrn.jus.br/arquivos/vpn.exe"
-        Write-Log "Navegador aberto. Por favor, baixe e execute o instalador manualmente." -Level "INFO"
-    }
-    catch {
-        Write-Log "Falha ao abrir navegador: $($_.Exception.Message)" -Level "ERROR"
-    }
+    Write-Log "Acesse: https://github.com/ronayrton/vpn-auto/releases" -Level "INFO"
 }
 
 function Initialize-Prerequisites {
@@ -402,8 +396,7 @@ function Main {
                 $downloadUrls = @($CustomUrl)
             } else {
                 $downloadUrls = @(
-                    "https://github.com/ronayrton/vpn-auto/releases/download/v1.0.0/vpntjrn.exe",
-                    "https://suporte.tjrn.jus.br/arquivos/vpntjrn.exe"
+                    "https://github.com/ronayrton/vpn-auto/releases/download/v2.0.0/FortiClientVPN7.0.exe"
                 )
             }
             
