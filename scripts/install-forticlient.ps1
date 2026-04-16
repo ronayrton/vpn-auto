@@ -73,6 +73,11 @@ function Test-IsInstalled {
         Write-Log "FortiClient já instalado (registro): $($reg.DisplayName)" -Level "INFO"
         return $true
     }
+    $regPath = "HKLM:\SOFTWARE\Fortinet\FortiClient"
+    if (Test-Path $regPath) {
+        Write-Log "FortiClient já instalado (pasta Fortinet)" -Level "INFO"
+        return $true
+    }
     return $false
 }
 
@@ -132,11 +137,17 @@ function Install-FortiClient {
     try {
         $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart" -WindowStyle Hidden -Wait -PassThru
         
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 10
+        
+        $fortiExe = "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
+        if (Test-Path $fortiExe) {
+            Write-Log "Instalação concluída (FortiClient.exe encontrado)" -Level "SUCCESS"
+            return $true
+        }
         
         $fortiProc = Get-Process -Name "FortiClientVPN" -ErrorAction SilentlyContinue
         if ($fortiProc) {
-            Write-Log "Instalação concluída (FortiClient executando)" -Level "SUCCESS"
+            Write-Log "Instalação concluída (FortiClientVPN executando)" -Level "SUCCESS"
             return $true
         }
         
@@ -146,7 +157,11 @@ function Install-FortiClient {
         }
         else {
             Write-Log "Instalação finalizada com código: $($process.ExitCode)" -Level "WARNING"
-            return $true
+            if (Test-Path $fortiExe) {
+                Write-Log "FortiClient.exe encontrado mesmo com código de erro" -Level "SUCCESS"
+                return $true
+            }
+            return $false
         }
     }
     catch {
