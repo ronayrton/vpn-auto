@@ -358,13 +358,14 @@ function New-VPNConfiguration {
         # Aguardar 2 segundos
         Start-Sleep -Seconds 2
         
-        # Reabrir FortiClient
+        # Reabrir FortiClient em modo de edição
         try {
-            Start-Process $fortiClientPath -ErrorAction Stop
-            Write-Log "FortiClient reopened" -Level "SUCCESS"
+            Start-Process $fortiClientPath -ArgumentList "--settings" -ErrorAction Stop
+            Write-Log "FortiClient aberto em configurações" -Level "SUCCESS"
         }
         catch {
-            Write-Log "Erro ao reopen FortiClient: $($_.Exception.Message)" -Level "WARNING"
+            Start-Process $fortiClientPath -ErrorAction Stop
+            Write-Log "FortiClient reopened" -Level "SUCCESS"
         }
         
         Write-Log "========================================" -Level "SUCCESS"
