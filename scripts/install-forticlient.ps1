@@ -63,6 +63,11 @@ function Write-Log {
 }
 
 function Test-IsInstalled {
+    $fortiExe = "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
+    if (Test-Path $fortiExe) {
+        Write-Log "FortiClient já instalado: $fortiExe" -Level "INFO"
+        return $true
+    }
     $app = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*FortiClient*" }
     if ($app) {
         Write-Log "FortiClient já instalado: $($app.Name) v$($app.Version)" -Level "INFO"
@@ -71,11 +76,6 @@ function Test-IsInstalled {
     $reg = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" | Where-Object { $_.DisplayName -like "*FortiClient*" }
     if ($reg) {
         Write-Log "FortiClient já instalado (registro): $($reg.DisplayName)" -Level "INFO"
-        return $true
-    }
-    $regPath = "HKLM:\SOFTWARE\Fortinet\FortiClient"
-    if (Test-Path $regPath) {
-        Write-Log "FortiClient já instalado (pasta Fortinet)" -Level "INFO"
         return $true
     }
     return $false
@@ -135,9 +135,10 @@ function Install-FortiClient {
     Write-Log "Iniciando instalação silenciosa..."
     
     try {
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart" -WindowStyle Hidden -Wait -PassThru
+        $logFile = "$env:TEMP\FortiClientInstall.log"
+        $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart /log `"$logFile`"" -WindowStyle Hidden -Wait -PassThru
         
-        Start-Sleep -Seconds 10
+        Start-Sleep -Seconds 15
         
         $fortiExe = "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
         if (Test-Path $fortiExe) {
@@ -160,6 +161,11 @@ function Install-FortiClient {
             if (Test-Path $fortiExe) {
                 Write-Log "FortiClient.exe encontrado mesmo com código de erro" -Level "SUCCESS"
                 return $true
+            }
+            Write-Log "Verificando logs de instalação..." -Level "INFO"
+            if (Test-Path $logFile) {
+                $logContent = Get-Content $logFile -Tail 20 -ErrorAction SilentlyContinue
+                Write-Log "Log: $($logContent -join ' | ')" -Level "INFO"
             }
             return $false
         }
