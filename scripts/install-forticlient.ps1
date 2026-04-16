@@ -1,4 +1,4 @@
-#>
+<#
 .SYNOPSIS
     Script de automacao para instalacao do FortiClient VPN
 
