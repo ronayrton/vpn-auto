@@ -273,9 +273,9 @@ function New-VPNConfiguration {
         Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -Type String -ErrorAction Stop
         Write-Log "  - Server: $serverAddress" -Level "INFO"
         
-        # promptusername = 0 (DWord) - Campo usuario em branco para usuario preencher
+        # promptusername = 0 (DWord) - Nao pedir usuario
         Set-ItemProperty -Path $registryPath -Name "promptusername" -Value 0 -Type DWord -ErrorAction Stop
-        Write-Log "  - promptusername: 0 (campo usuario em branco)" -Level "INFO"
+        Write-Log "  - promptusername: 0" -Level "INFO"
         
         # promptcertificate = 0 (DWord) - Nenhum certificado
         Set-ItemProperty -Path $registryPath -Name "promptcertificate" -Value 0 -Type DWord -ErrorAction Stop
@@ -293,9 +293,9 @@ function New-VPNConfiguration {
         Set-ItemProperty -Path $registryPath -Name "use_external_browser" -Value 0 -Type DWord -ErrorAction Stop
         Write-Log "  - use_external_browser: 0" -Level "INFO"
         
-        # username = "" (String) - Campo vazio para usuario preencher
-        Set-ItemProperty -Path $registryPath -Name "username" -Value "" -Type String -ErrorAction Stop
-        Write-Log "  - username: (em branco para usuario preencher)" -Level "INFO"
+        # username = "f000000" (String) - Usuario automatico
+        Set-ItemProperty -Path $registryPath -Name "username" -Value "f000000" -Type String -ErrorAction Stop
+        Write-Log "  - username: f000000" -Level "INFO"
         
         # show_remember_password = 1 (DWord) - Mostra opcao lembrar senha
         Set-ItemProperty -Path $registryPath -Name "show_remember_password" -Value 1 -Type DWord -ErrorAction Stop
