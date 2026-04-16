@@ -282,10 +282,6 @@ function New-VPNConfiguration {
         Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -Type String -ErrorAction Stop
         Write-Log "  - Server: $serverAddress" -Level "INFO"
         
-        # Description - Descrição do perfil
-        Set-ItemProperty -Path $registryPath -Name "Description" -Value "VPN Automática TJRN" -Type String -ErrorAction Stop
-        Write-Log "  - Description: VPN Automática TJRN" -Level "INFO"
-        
         # promptusername = 0 (DWord) - Campo usuário em branco para usuário preencher
         Set-ItemProperty -Path $registryPath -Name "promptusername" -Value 0 -Type DWord -ErrorAction Stop
         Write-Log "  - promptusername: 0 (campo usuário em branco)" -Level "INFO"
