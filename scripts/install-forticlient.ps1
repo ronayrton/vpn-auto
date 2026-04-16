@@ -384,7 +384,6 @@ function Main {
             }
             
             if ($CustomUrl) {
-            if ($CustomUrl) {
                 $downloadUrls = @($CustomUrl)
             } else {
                 $downloadUrls = @(
