@@ -273,9 +273,9 @@ function New-VPNConfiguration {
         Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -Type String -ErrorAction Stop
         Write-Log "  - Server: $serverAddress" -Level "INFO"
         
-        # promptusername = 0 (DWord) - Nao pedir usuario
-        Set-ItemProperty -Path $registryPath -Name "promptusername" -Value 0 -Type DWord -ErrorAction Stop
-        Write-Log "  - promptusername: 0" -Level "INFO"
+        # promptusername = 1 (DWord) - Usar usuario salvo
+        Set-ItemProperty -Path $registryPath -Name "promptusername" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - promptusername: 1 (usar usuario salvo)" -Level "INFO"
         
         # promptcertificate = 0 (DWord) - Nenhum certificado
         Set-ItemProperty -Path $registryPath -Name "promptcertificate" -Value 0 -Type DWord -ErrorAction Stop
