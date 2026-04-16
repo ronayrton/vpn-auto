@@ -136,11 +136,20 @@ function Install-FortiClient {
     
     try {
         Write-Log "Limpando restos de instalação anterior..." -Level "INFO"
+        
+        try {
+            Stop-Service -Name "msiserver" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+            Start-Service -Name "msiserver" -ErrorAction SilentlyContinue
+        } catch { }
+        
         $rollbackKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Installer\Rollback\Scripts"
         Remove-Item -Path $rollbackKey -Recurse -ErrorAction SilentlyContinue
         
         $logFile = "$env:TEMP\FortiClientInstall.log"
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart /log `"$logFile`"" -WindowStyle Hidden -Wait -PassThru
+        
+        Write-Log "Executando instalador..." -Level "INFO"
+        $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart" -WindowStyle Hidden -Wait -PassThru
         
         Start-Sleep -Seconds 15
         
