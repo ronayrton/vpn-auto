@@ -263,11 +263,15 @@ function New-VPNConfiguration {
         Write-Log "Criando perfil VPN no registro..." -Level "INFO"
         Write-Log "Caminho: $registryPath" -Level "INFO"
         
-        # Criar a chave do registro se não existir
-        if (-not (Test-Path $registryPath)) {
-            New-Item -Path $registryPath -Force | Out-Null
-            Write-Log "Chave do registro criada" -Level "INFO"
+        # Remover config anterior antes de criar nova
+        if (Test-Path $registryPath) {
+            Write-Log "Removendo configuração anterior..." -Level "INFO"
+            Remove-Item -Path $registryPath -Recurse -Force
         }
+        
+        # Criar a chave do registro
+        New-Item -Path $registryPath -Force | Out-Null
+        Write-Log "Chave do registro criada" -Level "INFO"
         
         # ==============================================================================
         # Configurar as propriedades do perfil VPN com dados reais
