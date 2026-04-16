@@ -8,18 +8,15 @@ Automação para instalação do FortiClient VPN em ambientes corporativos usand
 
 ## Objetivo
 
-Automatizar a instalação do FortiClient VPN em estações de trabalho corporativas, reduzindo o tempo de atendimento do suporte técnico em Assistance Ránpida do Windows.
+Automatizar a instalação do FortiClient VPN em estações de trabalho corporativas, reduzindo o tempo de atendimento do suporte técnico em Assistência Rápida do Windows.
 
 ## Quick Start (1 linha)
 
 ```powershell
-# Instalar FortiClient (sem configuração automática)
-irm "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1" -OutFile "$env:TEMP\forti-install.ps1"; & "$env:TEMP\forti-install.ps1"
+irm "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1?t=$(Get-Random)" -OutFile "$env:TEMP\install.ps1"; & "$env:TEMP\install.ps1"
 ```
 
 > **Nota**: Execute o PowerShell como Administrador antes de executar o comando acima.
-
-> **IMPORTANTE**: A configuração automática da VPN não funciona no FortiClient 7.2+. O técnico deve configurar manualmente uma vez após a instalação.
 
 ## Estrutura do Projeto
 
@@ -28,48 +25,88 @@ vpn-auto/
 ├── README.md                      # Este arquivo
 ├── LICENSE                        # Licença MIT
 ├── scripts/
-│   ├── install-forticlient.ps1     # Script principal (instalar)
-│   ├── full-install.ps1            # Instalar + configurar (experimental)
-│   └── clean-install.ps1           # Desinstalar + limpar + instalar
+│   ├── install-forticlient.ps1     # Script principal (instalar + configurar)
+│   ├── config-vpn.ps1            # Configurar VPN apenas
+│   ├── configure-vpn-ui.ps1      # Configurar VPN com Interface Gráfica
+│   ├── cleanup-forticlient.ps1   # Desinstalar FortiClient
+│   ├── full-install-70.ps1       # Instalação completa (FortiClient 7.0)
+│   ├── install-forticlient-70.ps1 # Instalar apenas (versão 7.0)
+│   ├── install-config-70.ps1     # Instalar + configurar (7.0)
+│   ├── install-and-configure.ps1 # Instalar + configurar
+│   ├── export-vpn.ps1           # Exportar configuração VPN
+│   └── clean-install.ps1         # Limpar + instalar
 ├── install/
-│   └── run-install.ps1             # Script para execução remota
+│   └── run-install.ps1           # Script para execução remota
 └── docs/
-    └── runbook.md                  # Guia para técnicos
+    └── runbook.md               # Guia para técnicos
 ```
 
 ## Scripts
 
-### scripts/install-forticlient.ps1
+### scripts/install-forticlient.ps1 (Principal)
 
 Script principal que executa:
-
 1. **Verificação de permissões** - Confirma execução como Administrador
-2. **Download do instalador** - Baixa de URLs configuradas (com fallback)
-3. **Instalação silenciosa** - Executa com parâmetros `/quiet /norestart`
-4. **Tratamento de erros** - Try/Catch com logs detalhados
-5. **Fallback manual** - Abre navegador se download falhar
+2. **Verificação se já instalado** - Detecta instalação existente
+3. **Download do instalador** - Baixa de URLs configuradas
+4. **Instalação silenciosa** -Executa com parâmetros `/quiet /norestart`
+5. **Configuração automática** - Cria perfil TJRN no registro
+6. **Tratamento de erros** - Try/Catch com logs detalhados
 
-### install/run-install.ps1
+**Parâmetros:**
+- `-SkipCheck` - Pula verificação de instalação
+- `-SkipConfig` - Pula configuração automática
+- `-CustomUrl` - URL customizada do instalador
 
-Script para execução remota que baixa e executa o script principal diretamente de uma URL.
+### scripts/config-vpn.ps1
 
-```powershell
-# Executar
-.\install\run-install.ps1
+Script para configurar apenas o perfil VPN (sem instalação):
+- Cria perfil TJRN no registro
+- Configura gateway vpn.tjrn.jus.br:10443
+- Não armazena senha (usuário digita manualmente)
 
-# Ou direto
-iex (iwr "https://raw.githubusercontent.com/assyst/assyst-vpn-automation/main/install/run-install.ps1")
-```
+### scripts/cleanup-forticlient.ps1
+
+Script para desinstalar o FortiClient:
+- Remove via.msiexec
+- Limpa arquivos remanescentes
+- Limpa registros do Windows
+
+### scripts/clean-install.ps1
+
+Script para limpeza completa:
+- Desinstala versão anterior
+- Limpa registros e arquivos
+- Instala nova versão
 
 ## URLs de Download
 
 O script tenta múltiplas fontes (ordem de prioridade):
 
-| # | URL | Status |
-|---|-----|--------|
-| 1 | https://suporte.tjrn.jus.br/arquivos/vpn.exe | Primária |
+| # | URL | Versão FortiClient |
+|---|-----|-------------------|
+| 1 | https://github.com/ronayrton/vpn-auto/releases/download/v2.0.0/FortiClientVPN7.0.exe | 7.0 |
+| 2 | https://github.com/ronayrton/vpn-auto/releases/download/v1.0.0/vpntjrn.exe | 7.2 |
 
-> **Nota**: Adicione suas próprias URLs no array `$downloadUrls` dentro do script.
+## Configuração VPN (Registro)
+
+O script configura automaticamente o perfil TJRN no registro:
+
+Caminho: `HKLM:\SOFTWARE\Fortinet\FortiClient\Sslvpn\Tunnels\TJRN`
+
+Propriedades:
+- `Server` = vpn.tjrn.jus.br:10443
+- `Description` = VPN Automática TJRN
+- `promptusername` = 0
+- `promptcertificate` = 0
+- `ServerCert` = 1
+- `sso_enabled` = 0
+- `use_external_browser` = 0
+- `username` = (vazio)
+- `show_remember_password` = 1
+- `save_credentials` = 1
+- `save_password` = 1
+- `warn_invalid_server_certificate` = 1
 
 ## Tecnologias
 
@@ -83,7 +120,6 @@ O script tenta múltiplas fontes (ordem de prioridade):
 - **Automação**: Sem intervenção manual do usuário
 - **Consistência**: Instalação padronizada em todas as máquinas
 - **Auditoria**: Logs de instalação no Event Viewer
-- **Fallback**: Procedimento manual como backup
 
 ## Pré-requisitos
 
@@ -91,30 +127,6 @@ O script tenta múltiplas fontes (ordem de prioridade):
 - PowerShell 5.1+
 - Permissão de Administrador
 - Acesso à internet para download
-
-## Configuração AWS S3 (Futuro)
-
-O projeto está preparado para integração futura com AWS S3:
-
-```powershell
-# Estrutura planejada:
-# s3://bucket-name/forticlient/FortiClientVPNSetup.exe
-# s3://bucket-name/scripts/install-forticlient.ps1
-```
-
-Para habilitar, adicione o AWS Module no script.
-
-## Extensibilidade
-
-O projeto suporta adição de novos scripts de instalação:
-
-```
-scripts/
-├── install-forticlient.ps1    # VPN
-├── install-java.ps1          # Java (futuro)
-├── install-printers.ps1       # Impressoras (futuro)
-└── install-office.ps1         # Office (futuro)
-```
 
 ## Logs
 
@@ -127,7 +139,6 @@ Os logs são exibidos no console durante a execução e também registrados no W
 ## Suporte
 
 Para dúvidas ou problemas:
-
 1. Execute com `-Verbose` para logs detalhados
 2. Verifique o Event Viewer
 3. Abra uma issue no GitHub
