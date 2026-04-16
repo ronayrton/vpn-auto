@@ -135,6 +135,10 @@ function Install-FortiClient {
     Write-Log "Iniciando instalação silenciosa..."
     
     try {
+        Write-Log "Limpando restos de instalação anterior..." -Level "INFO"
+        $rollbackKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Installer\Rollback\Scripts"
+        Remove-Item -Path $rollbackKey -Recurse -ErrorAction SilentlyContinue
+        
         $logFile = "$env:TEMP\FortiClientInstall.log"
         $process = Start-Process -FilePath $InstallerPath -ArgumentList "/quiet /norestart /log `"$logFile`"" -WindowStyle Hidden -Wait -PassThru
         
