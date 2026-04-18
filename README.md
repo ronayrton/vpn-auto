@@ -62,7 +62,7 @@ Script principal que executa:
 
 Script para configurar apenas o perfil VPN (sem instalação):
 - Cria perfil TJRN no registro
-- Configura gateway vpn.tjrn.jus.br:10443
+- Configura gateway 
 - Não armazena senha (usuário digita manualmente)
 
 ### scripts/cleanup-forticlient.ps1
@@ -90,13 +90,13 @@ O script tenta múltiplas fontes (ordem de prioridade):
 
 ## Configuração VPN (Registro)
 
-O script configura automaticamente o perfil TJRN no registro:
+O script configura automaticamente o perfil no registro:
 
 Caminho: `HKLM:\SOFTWARE\Fortinet\FortiClient\Sslvpn\Tunnels\TJRN`
 
 Propriedades:
-- `Server` = vpn.tjrn.jus.br:10443
-- `Description` = VPN Automática TJRN
+- `Server` = 
+- `Description` = VPN Automática 
 - `promptusername` = 0
 - `promptcertificate` = 0
 - `ServerCert` = 1
