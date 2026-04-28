@@ -1,21 +1,47 @@
 <#
 .SYNOPSIS
-    Script de automação para instalação do FortiClient VPN 7.4.3
+    Script de automação para instalação e configuração do FortiClient VPN 7.4.3
 
 .DESCRIPTION
-    Este script automatiza o download e instalação do FortiClient VPN versão 7.4.3.
+    Este script automatiza o download, instalação e configuração do FortiClient VPN versão 7.4.3.
+
+.PARAMETER SkipCheck
+    Pula verificação de instalação existente
+
+.PARAMETER CustomUrl
+    URL customizada para o instalador
+
+.PARAMETER SkipConfig
+    Pula configuração automática da VPN
+
+.EXAMPLE
+    .\install-forticlient-743.ps1
+
+.EXAMPLE
+    .\install-forticlient-743.ps1 -SkipConfig
 
 .NOTES
     Autor: Equipe de Suporte
-    Versão: 1.0.0
+    Versão: 1.1.0
     Data: Abril 2026
 #>
 
 [CmdletBinding()]
 param(
     [switch]$SkipCheck,
+    [switch]$SkipConfig,
     [string]$CustomUrl
 )
+
+# ==============================================================================
+# CONFIGURAÇÕES DA VPN
+# ==============================================================================
+$VPNConfig = @{
+    NomePerfil = "TJRN"
+    Gateway    = "vpn.tjrn.jus.br"
+    Porta      = 10443
+}
+# ==============================================================================
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
@@ -144,69 +170,281 @@ function Install-FortiClient {
     }
 }
 
+function Register-InstallationMetric {
+    param([bool]$Success)
+
+    $eventLogName = "Application"
+    $source = "Assyst-VPN-Automation"
+
+    try {
+        if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+            New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+        }
+
+        $message = if ($Success) { "FortiClientVPN 7.4.3 instalado com sucesso" } else { "Falha na instalacao do FortiClientVPN 7.4.3" }
+        Write-EventLog -LogName $eventLogName -Source $source -Message $message -EventId 1001 -EntryType $(if ($Success) { "Information" } else { "Error" }) -ErrorAction SilentlyContinue
+    }
+    catch {
+        Write-Log "Nao foi possivel registrar metrica: $($_.Exception.Message)" -Level "WARNING"
+    }
+}
+
+# ==============================================================================
+# FUNÇÃO DE CONFIGURAÇÃO AUTOMÁTICA DA VPN VIA REGISTRO
+# ==============================================================================
+function New-VPNConfiguration {
+    param()
+
+    # ==============================================================================
+    # Verificar se o FortiClient está instalado
+    # ==============================================================================
+    $fortiClientPath = "C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
+
+    if (-not (Test-Path $fortiClientPath)) {
+        Write-Log "FortiClient não encontrado em $fortiClientPath - pulando configuração" -Level "WARNING"
+        return $false
+    }
+
+    Write-Log "========================================" -Level "INFO"
+    Write-Log "Configuração Automática da VPN TJRN" -Level "INFO"
+    Write-Log "========================================" -Level "INFO"
+
+    # Aguardar 5 segundos para o FortiClient estar pronto após instalação
+    Write-Log "Aguardando 5 segundos..." -Level "INFO"
+    Start-Sleep -Seconds 5
+
+    try {
+        # ==============================================================================
+        # Criar chave do registro para o perfil VPN
+        # ==============================================================================
+        $registryPath = "HKLM:\SOFTWARE\Fortinet\FortiClient\Sslvpn\Tunnels\TJRN"
+
+        Write-Log "Criando perfil VPN no registro..." -Level "INFO"
+        Write-Log "Caminho: $registryPath" -Level "INFO"
+
+        # Remover config anterior antes de criar nova
+        if (Test-Path $registryPath) {
+            Write-Log "Removendo configuração anterior..." -Level "INFO"
+            Remove-Item -Path $registryPath -Recurse -Force
+        }
+
+        # Criar a chave do registro
+        New-Item -Path $registryPath -Force | Out-Null
+        Write-Log "Chave do registro criada" -Level "INFO"
+
+        # ==============================================================================
+        # Configurar as propriedades do perfil VPN com dados reais
+        # ==============================================================================
+        $serverAddress = "vpn.tjrn.jus.br:10443"
+
+        # Server - Endereço do gateway VPN
+        Set-ItemProperty -Path $registryPath -Name "Server" -Value $serverAddress -Type String -ErrorAction Stop
+        Write-Log "  - Server: $serverAddress" -Level "INFO"
+
+        # promptusername = 1 (DWord) - Usar usuário salvo
+        Set-ItemProperty -Path $registryPath -Name "promptusername" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - promptusername: 1 (usar usuário salvo)" -Level "INFO"
+
+        # promptcertificate = 0 (DWord) - Nenhum certificado
+        Set-ItemProperty -Path $registryPath -Name "promptcertificate" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - promptcertificate: 0" -Level "INFO"
+
+        # ServerCert = "1" (String)
+        Set-ItemProperty -Path $registryPath -Name "ServerCert" -Value "1" -Type String -ErrorAction Stop
+        Write-Log "  - ServerCert: 1" -Level "INFO"
+
+        # sso_enabled = 0 (DWord) - SSO desativado
+        Set-ItemProperty -Path $registryPath -Name "sso_enabled" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - sso_enabled: 0" -Level "INFO"
+
+        # use_external_browser = 0 (DWord)
+        Set-ItemProperty -Path $registryPath -Name "use_external_browser" -Value 0 -Type DWord -ErrorAction Stop
+        Write-Log "  - use_external_browser: 0" -Level "INFO"
+
+        # username = "f000000" (String) - Usuário automático
+        Set-ItemProperty -Path $registryPath -Name "username" -Value "f000000" -Type String -ErrorAction Stop
+        Write-Log "  - username: f000000" -Level "INFO"
+
+        # show_remember_password = 1 (DWord) - Mostra opção lembrar senha
+        Set-ItemProperty -Path $registryPath -Name "show_remember_password" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - show_remember_password: 1" -Level "INFO"
+
+        # save_credentials = 1 (DWord) - Salva credenciais
+        Set-ItemProperty -Path $registryPath -Name "save_credentials" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - save_credentials: 1" -Level "INFO"
+
+        # save_password = 1 (DWord) - Salva senha
+        Set-ItemProperty -Path $registryPath -Name "save_password" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - save_password: 1" -Level "INFO"
+
+        # warn_invalid_server_certificate = 1 (DWord)
+        Set-ItemProperty -Path $registryPath -Name "warn_invalid_server_certificate" -Value 1 -Type DWord -ErrorAction Stop
+        Write-Log "  - warn_invalid_server_certificate: 1" -Level "INFO"
+
+        Write-Log "Perfil VPN configurado com sucesso!" -Level "SUCCESS"
+
+        # ==============================================================================
+        # Registrar no Windows Event Viewer
+        # ==============================================================================
+        $source = "Assyst-VPN-Automation"
+        $eventLogName = "Application"
+        try {
+            if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+                New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+            }
+            Write-EventLog -LogName $eventLogName -Source $source -Message "VPN TJRN configurada automaticamente - Server: $serverAddress (FortiClient 7.4.3)" -EventId 1001 -EntryType Information -ErrorAction SilentlyContinue
+            Write-Log "Registrado no Event Viewer" -Level "INFO"
+        }
+        catch {
+            Write-Log "Não foi possível registrar no Event Viewer: $($_.Exception.Message)" -Level "WARNING"
+        }
+
+        # ==============================================================================
+        # Pós-configuração: Fechar e reabrir FortiClient
+        # ==============================================================================
+        Write-Log "========================================" -Level "INFO"
+        Write-Log "Reiniciando FortiClient..." -Level "INFO"
+
+        # Fechar FortiClient primeiro
+        try {
+            Stop-Process -Name "FortiClient" -Force -ErrorAction SilentlyContinue
+            Write-Log "FortiClient fechado" -Level "INFO"
+        }
+        catch {
+            Write-Log "Nenhum processo FortiClient ativo" -Level "INFO"
+        }
+
+        # Aguardar 2 segundos
+        Start-Sleep -Seconds 2
+
+        # Abrir FortiClient com parâmetro -c (conectar)
+        try {
+            Start-Process $fortiClientPath -ArgumentList "-c" -ErrorAction Stop
+            Write-Log "FortiClient aberto" -Level "SUCCESS"
+        }
+        catch {
+            Start-Process $fortiClientPath -ErrorAction Stop
+            Write-Log "FortiClient aberto" -Level "SUCCESS"
+        }
+
+        Write-Log "========================================" -Level "SUCCESS"
+        Write-Log "VPN TJRN configurada com sucesso!" -Level "SUCCESS"
+        Write-Log "O campo Usuário está em branco para o usuário preencher" -Level "INFO"
+        Write-Log "========================================" -Level "SUCCESS"
+
+        return $true
+    }
+    catch {
+        Write-Log "========================================" -Level "ERROR"
+        Write-Log "Erro ao configurar VPN: $($_.Exception.Message)" -Level "ERROR"
+        Write-Log "========================================" -Level "ERROR"
+
+        # Registrar erro no Event Viewer
+        try {
+            $source = "Assyst-VPN-Automation"
+            $eventLogName = "Application"
+            if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+                New-EventLog -LogName $eventLogName -Source $source -ErrorAction SilentlyContinue
+            }
+            Write-EventLog -LogName $eventLogName -Source $source -Message "Erro ao configurar VPN TJRN: $($_.Exception.Message)" -EventId 1001 -EntryType Error -ErrorAction SilentlyContinue
+        }
+        catch {
+            Write-Log "Não foi possível registrar erro no Event Viewer" -Level "WARNING"
+        }
+
+        return $false
+    }
+}
+# ==============================================================================
+
 function Initialize-Prerequisites {
-    Write-Log "Verificando prerequisites..."
+    Write-Log "Verificando pré-requisitos..."
 
     if (-not (Test-Administrator)) {
-        Write-Log "Este script requer execucao como Administrador!" -Level "ERROR"
-        throw "Permissao administrador necessaria"
+        Write-Log "Este script requer execução como Administrador!" -Level "ERROR"
+        Write-Log "Execute o PowerShell como Administrador e tente novamente." -Level "INFO"
+        throw "Permissão administrador necessária"
     }
 
     $netVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" -ErrorAction SilentlyContinue).Release
     if ($netVersion -lt 533320) {
-        Write-Log ".NET Framework 4.8 ou superior necessario" -Level "WARNING"
+        Write-Log ".NET Framework 4.8 ou superior necessário" -Level "WARNING"
     }
 
-    Write-Log "Prerequisites OK" -Level "SUCCESS"
+    Write-Log "Pré-requisitos OK" -Level "SUCCESS"
 }
 
 function Main {
     Write-Log "========================================" -Level "INFO"
-    Write-Log "FortiClient VPN 7.4.3 - Instalacao" -Level "INFO"
+    Write-Log "FortiClient VPN 7.4.3 - Instalação e Configuração" -Level "INFO"
     Write-Log "========================================" -Level "INFO"
 
     try {
         Initialize-Prerequisites
 
-        if (-not $SkipCheck -and (Test-IsInstalled)) {
-            Write-Log "FortiClient ja esta instalado. Use -SkipCheck para forcar reinstall." -Level "WARNING"
-            return
+        $isInstalled = Test-IsInstalled
+
+        if (-not $SkipCheck -and $isInstalled) {
+            Write-Log "FortiClient já está instalado. Pulando instalação..." -Level "WARNING"
+        }
+        else {
+            if (-not $isInstalled) {
+                Write-Log "FortiClient não encontrado. Iniciando instalação..." -Level "INFO"
+            }
+
+            if ($CustomUrl) {
+                $downloadUrls = @($CustomUrl)
+            } else {
+                $downloadUrls = @(
+                    "https://github.com/ronayrton/vpn-auto/releases/download/v3.0.0/FortiClientVPN7.4.3.exe"
+                )
+            }
+
+            $installerPath = Get-FortiClientInstaller -Urls $downloadUrls
+
+            if ($null -eq $installerPath) {
+                Write-Log "Todas as URLs de download falharam" -Level "ERROR"
+                Register-InstallationMetric -Success $false
+                return
+            }
+
+            $installSuccess = Install-FortiClient -InstallerPath $installerPath
+            Register-InstallationMetric -Success $installSuccess
+
+            if (-not $installSuccess) {
+                Write-Log "Instalação finalizada com erros" -Level "ERROR"
+            }
         }
 
-        if ($CustomUrl) {
-            $downloadUrls = @($CustomUrl)
-        } else {
-            $downloadUrls = @(
-                "https://github.com/ronayrton/vpn-auto/releases/download/v3.0.0/FortiClientVPN7.4.3.exe"
-            )
-        }
+        # Configuração automática da VPN (sempre executa, mesmo se já instalado)
+        if (-not $SkipConfig) {
+            Write-Log "========================================" -Level "INFO"
+            Write-Log "Iniciando configuração da VPN..." -Level "INFO"
+            Write-Log "========================================" -Level "INFO"
 
-        $installerPath = Get-FortiClientInstaller -Urls $downloadUrls
+            $configSuccess = New-VPNConfiguration
 
-        if ($null -eq $installerPath) {
-            Write-Log "Todas as URLs de download falharam" -Level "ERROR"
-            return
-        }
-
-        $installSuccess = Install-FortiClient -InstallerPath $installerPath
-
-        if ($installSuccess) {
-            Write-Log "========================================" -Level "SUCCESS"
-            Write-Log "FortiClient VPN 7.4.3 instalado com sucesso!" -Level "SUCCESS"
-            Write-Log "========================================" -Level "SUCCESS"
+            if ($configSuccess) {
+                Write-Log "========================================" -Level "SUCCESS"
+                Write-Log "VPN configurada automaticamente!" -Level "SUCCESS"
+                Write-Log "========================================" -Level "SUCCESS"
+            }
         }
     }
     catch {
-        Write-Log "Erro critico: $($_.Exception.Message)" -Level "ERROR"
+        Write-Log "Erro crítico: $($_.Exception.Message)" -Level "ERROR"
+        Register-InstallationMetric -Success $false
         throw
     }
     finally {
         if ($installerPath -and (Test-Path $installerPath)) {
-            Write-Log "Limpando arquivos temporarios..."
+            Write-Log "Limpando arquivos temporários..."
             Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
         }
 
-        Write-Log "Processo concluido" -Level "INFO"
+        Write-Log "========================================" -Level "INFO"
+        Write-Log "Processo concluído!" -Level "SUCCESS"
+        Write-Log "========================================" -Level "INFO"
     }
 }
 
