@@ -302,21 +302,9 @@ function New-VPNConfiguration {
         Write-Log "========================================" -Level "SUCCESS"
         Write-Log "VPN TJRN configurada com sucesso!" -Level "SUCCESS"
         Write-Log "========================================" -Level "SUCCESS"
-
-        # Tentar abrir o FortiClient (sem travar o script se der erro)
-        try {
-            Write-Log "Aguardando inicialização do FortiClient..." -Level "INFO"
-            Start-Sleep -Seconds 5
-            Start-Process $fortiClientPath -ErrorAction Stop
-            Write-Log "FortiClient aberto automaticamente" -Level "SUCCESS"
-        }
-        catch {
-            Write-Log "FortiClient instalado. Abra manualmente se necessário." -Level "INFO"
-        }
-
-        Write-Log "========================================" -Level "INFO"
         Write-Log "Instalação concluída!" -Level "INFO"
-        Write-Log "O FortiClient VPN 7.4.3 foi instalado e configurado." -Level "INFO"
+        Write-Log "FortiClient VPN 7.4.3 instalado e configurado." -Level "INFO"
+        Write-Log "Abra o FortiClient manualmente para usar a VPN." -Level "INFO"
         Write-Log "========================================" -Level "INFO"
 
         return $true
