@@ -299,38 +299,13 @@ function New-VPNConfiguration {
             Write-Log "Não foi possível registrar no Event Viewer: $($_.Exception.Message)" -Level "WARNING"
         }
 
-        # ==============================================================================
-        # Pós-configuração: Fechar e reabrir FortiClient
-        # ==============================================================================
-        Write-Log "========================================" -Level "INFO"
-        Write-Log "Reiniciando FortiClient..." -Level "INFO"
-
-        # Fechar FortiClient primeiro
-        try {
-            Stop-Process -Name "FortiClient" -Force -ErrorAction SilentlyContinue
-            Write-Log "FortiClient fechado" -Level "INFO"
-        }
-        catch {
-            Write-Log "Nenhum processo FortiClient ativo" -Level "INFO"
-        }
-
-        # Aguardar 2 segundos
-        Start-Sleep -Seconds 2
-
-        # Abrir FortiClient com parâmetro -c (conectar)
-        try {
-            Start-Process $fortiClientPath -ArgumentList "-c" -ErrorAction Stop
-            Write-Log "FortiClient aberto" -Level "SUCCESS"
-        }
-        catch {
-            Start-Process $fortiClientPath -ErrorAction Stop
-            Write-Log "FortiClient aberto" -Level "SUCCESS"
-        }
-
         Write-Log "========================================" -Level "SUCCESS"
         Write-Log "VPN TJRN configurada com sucesso!" -Level "SUCCESS"
-        Write-Log "O campo Usuário está em branco para o usuário preencher" -Level "INFO"
         Write-Log "========================================" -Level "SUCCESS"
+        Write-Log "Instalação concluída!" -Level "INFO"
+        Write-Log "O FortiClient VPN 7.4.3 foi instalado e configurado." -Level "INFO"
+        Write-Log "Abra o FortiClient manualmente para usar a VPN." -Level "INFO"
+        Write-Log "========================================" -Level "INFO"
 
         return $true
     }
