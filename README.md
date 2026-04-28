@@ -12,8 +12,14 @@ Automatizar a instalação do FortiClient VPN em estações de trabalho corporat
 
 ## Quick Start (1 linha)
 
+### Versão 7.4.3 (Mais Recente)
 ```powershell
-irm "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient.ps1?t=$(Get-Random)" -OutFile "$env:TEMP\install.ps1"; & "$env:TEMP\install.ps1"
+irm "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient-743.ps1?t=$(Get-Random)" -OutFile "$env:TEMP\install.ps1"; & "$env:TEMP\install.ps1"
+```
+
+### Versão 7.0 (Estável)
+```powershell
+irm "https://raw.githubusercontent.com/ronayrton/vpn-auto/main/scripts/install-forticlient-70.ps1?t=$(Get-Random)" -OutFile "$env:TEMP\install.ps1"; & "$env:TEMP\install.ps1"
 ```
 
 > **Nota**: Execute o PowerShell como Administrador antes de executar o comando acima.
@@ -32,6 +38,9 @@ vpn-auto/
 │   ├── full-install-70.ps1       # Instalação completa (FortiClient 7.0)
 │   ├── install-forticlient-70.ps1 # Instalar apenas (versão 7.0)
 │   ├── install-config-70.ps1     # Instalar + configurar (7.0)
+│   ├── full-install-743.ps1      # Instalação completa (FortiClient 7.4.3)
+│   ├── install-forticlient-743.ps1 # Instalar apenas (versão 7.4.3)
+│   ├── install-config-743.ps1    # Instalar + configurar (7.4.3)
 │   ├── install-and-configure.ps1 # Instalar + configurar
 │   ├── export-vpn.ps1           # Exportar configuração VPN
 │   └── clean-install.ps1         # Limpar + instalar
@@ -87,6 +96,7 @@ O script tenta múltiplas fontes (ordem de prioridade):
 |---|-----|-------------------|
 | 1 | https://github.com/ronayrton/vpn-auto/releases/download/v2.0.0/FortiClientVPN7.0.exe | 7.0 |
 | 2 | https://github.com/ronayrton/vpn-auto/releases/download/v1.0.0/vpntjrn.exe | 7.2 |
+| 3 | https://github.com/ronayrton/vpn-auto/releases/download/v3.0.0/FortiClientVPN7.4.3.exe | 7.4.3 |
 
 ## Configuração VPN (Registro)
 
