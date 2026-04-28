@@ -14,9 +14,9 @@ Automatizar a instalação do FortiClient VPN em estações de trabalho corporat
 
 ### Comando Mais Curto (Recomendado)
 ```powershell
-iex(irm bit.ly/fortivpn)
+iex(irm bit.ly/vpntjrn)
 ```
-> Crie um link no [Bitly](https://bitly.com) apontando para: `https://raw.githubusercontent.com/ronayrton/vpn-auto/main/install.ps1`
+> Crie o link no [Bitly](https://bitly.com) apontando para: `https://raw.githubusercontent.com/ronayrton/vpn-auto/main/install.ps1`
 
 ### Versão 7.4.3 (Mais Recente)
 ```powershell
